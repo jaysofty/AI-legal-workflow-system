@@ -1,0 +1,915 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  INVITED
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  FIRM_ADMIN
+  PRINCIPAL_PARTNER
+  SENIOR_ASSOCIATE
+  CORPORATE_ASSOCIATE
+  IN_HOUSE_COUNSEL
+  LITIGATION_CLERK
+  CHAMBERS_PUPIL
+  NYSC_INTERN
+}
+
+enum ClientType {
+  INDIVIDUAL
+  COMPANY
+  GOVERNMENT
+  NGO
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum MatterStatus {
+  LEAD
+  INTAKE
+  CONFLICT_CHECK
+  PENDING_RETENTION
+  ACTIVE
+  LITIGATION
+  TRANSACTION
+  JUDGMENT
+  ENFORCEMENT
+  COMPLETED
+  CLOSED
+  ARCHIVED
+}
+
+enum MatterType {
+  LITIGATION
+  CORPORATE
+  COMMERCIAL
+  EMPLOYMENT
+  REAL_ESTATE
+  REGULATORY
+  TAX
+  INTELLECTUAL_PROPERTY
+  TECHNOLOGY
+  ADR
+  CRIMINAL
+  FAMILY
+  OTHER
+}
+
+enum PartyRole {
+  CLIENT
+  OPPOSING_PARTY
+  CLAIMANT
+  DEFENDANT
+  PETITIONER
+  RESPONDENT
+  WITNESS
+  DIRECTOR
+  SHAREHOLDER
+  OTHER
+}
+
+enum DocumentType {
+  PLEADING
+  MOTION
+  AFFIDAVIT
+  WRITTEN_ADDRESS
+  WITNESS_STATEMENT
+  CONTRACT
+  AGREEMENT
+  COURT_ORDER
+  JUDGMENT
+  CTC
+  CERTIFICATE
+  REGULATORY
+  IDENTIFICATION
+  CORRESPONDENCE
+  LEGAL_RESEARCH
+  INTERNAL_MEMO
+  TEMPLATE
+  OTHER
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PROCESSING
+  READY
+  FAILED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ConversationType {
+  CLIENT
+  MATTER
+  INTERNAL
+  RESEARCH
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  TOOL
+}
+
+enum MemoryType {
+  CONVERSATION
+  MATTER_FACT
+  RESEARCH
+  FIRM_KNOWLEDGE
+  CLIENT_PREFERENCE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum EscalationStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  DISMISSED
+}
+
+enum EscalationReason {
+  HIGH_RISK
+  HUMAN_REVIEW_REQUIRED
+  MISSING_INFORMATION
+  LEGAL_UNCERTAINTY
+  CONFLICT_DETECTED
+  CLIENT_COMPLAINT
+  SENSITIVE_MATTER
+  AI_LIMITATION
+  OTHER
+}
+
+enum AIExecutionStatus {
+  STARTED
+  COMPLETED
+  FAILED
+  ESCALATED
+}
+
+enum ToolExecutionStatus {
+  STARTED
+  COMPLETED
+  FAILED
+  BLOCKED
+}
+
+enum WorkflowStatus {
+  PENDING
+  RUNNING
+  WAITING_FOR_HUMAN
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum WorkflowStepStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  WAITING_FOR_HUMAN
+  FAILED
+  SKIPPED
+}
+
+model Firm {
+  id           String  @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  address      String?
+  jurisdiction String  @default("Nigeria")
+
+  users        User[]
+  clients      Client[]
+  leads        Lead[]
+  matters      Matter[]
+  documents    Document[]
+  tasks        Task[]
+  templates    DocumentTemplate[]
+  legalSources LegalSource[]
+  auditLogs    AuditLog[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  conversations Conversation[]
+}
+
+model User {
+  id     String @id @default(cuid())
+  firmId String
+  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  firstName    String
+  lastName     String
+  email        String @unique
+  passwordHash String
+
+  role   UserRole   @default(LITIGATION_CLERK)
+  status UserStatus @default(INVITED)
+
+  clients            Client[]            @relation("ClientOwner")
+  matters            MatterUser[]
+  tasks              Task[]
+  conversations      Conversation[]
+  approvals          Approval[]
+  escalations        Escalation[]
+  aiExecutions       AIExecution[]
+  auditLogs          AuditLog[]
+  documents          Document[]
+  workflowExecutions WorkflowExecution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([firmId])
+  @@index([email])
+}
+
+model Client {
+  id     String @id @default(cuid())
+  firmId String
+  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  type        ClientType
+  firstName   String?
+  lastName    String?
+  companyName String?
+
+  email   String?
+  phone   String?
+  address String?
+
+  notes String?
+
+  ownerId String?
+  owner   User?   @relation("ClientOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  leads              Lead[]
+  matters            Matter[]
+  parties            MatterParty[]
+  conversations      Conversation[]
+  workflowExecutions WorkflowExecution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([firmId])
+  @@index([email])
+  @@index([companyName])
+}
+
+model Lead {
+  id String @id @default(cuid())
+
+  firmId String
+  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  name  String
+  email String?
+  phone String?
+
+  enquiry    String
+  matterType MatterType?
+  status     LeadStatus  @default(NEW)
+
+  source String?
+
+  convertedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([firmId])
+  @@index([status])
+}
+
+model Matter {
+  id String @id @default(cuid())
+
+  firmId String
+  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  referenceNumber String
+  title           String
+  description     String?
+
+  type   MatterType
+  status MatterStatus @default(INTAKE)
+
+  jurisdiction String  @default("Nigeria")
+  court        String?
+  courtNumber  String?
+
+  limitationDate DateTime?
+  openedAt       DateTime?
+  closedAt       DateTime?
+
+  users              MatterUser[]
+  parties            MatterParty[]
+  documents          Document[]
+  tasks              Task[]
+  deadlines          Deadline[]
+  hearings           Hearing[]
+  conversations      Conversation[]
+  memories           Memory[]
+  generatedDocuments GeneratedDocument[]
+  aiExecutions       AIExecution[]
+  escalations        Escalation[]
+  communications     Communication[]
+  followUps          FollowUp[]
+  workflowExecutions WorkflowExecution[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([firmId, referenceNumber])
+  @@index([firmId])
+  @@index([clientId])
+  @@index([status])
+  @@index([type])
+}
+
+model MatterUser {
+  id String @id @default(cuid())
+
+  matterId String
+  matter   Matter @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([matterId, userId])
+  @@index([userId])
+}
+
+model MatterParty {
+  id String @id @default(cuid())
+
+  matterId String
+  matter   Matter @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  name String
+  role PartyRole
+
+  email   String?
+  phone   String?
+  address String?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  @@index([matterId])
+}
+
+model Document {
+  id String @id @default(cuid())
+
+  firmId String
+  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  matterId String?
+  matter   Matter? @relation(fields: [matterId], references: [id], onDelete: SetNull)
+
+  name   String
+  type   DocumentType
+  status DocumentStatus @default(UPLOADED)
+
+  fileUrl  String?
+  mimeType String?
+  fileSize Int?
+
+  extractedText String?
+
+  uploadedById String?
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  chunks             DocumentChunk[]
+  generatedDocuments GeneratedDocument[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([firmId])
+  @@index([matterId])
+  @@index([type])
+  @@index([status])
+}
+
+model DocumentChunk {
+  id String @id @default(cuid())
+
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  content    String
+  chunkIndex Int
+
+  pageNumber Int?
+
+  metadata Json?
+
+  /**
+   * 384 dimensions for the initial embedding model.
+   * We can change this later if we choose another embedding model.
+   */
+  embedding Unsupported("vector(384)")?
+
+  createdAt DateTime @default(now())
+
+  @@unique([documentId, chunkIndex])
+  @@index([documentId])
+}
+
+model Task {
+  id String @id @default(cuid())
+
+  firmId String
+  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  matterId String?
+  matter   Matter? @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  assignedToId String?
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  title       String
+  description String?
+
+  status   TaskStatus   @default(TODO)
+  priority TaskPriority @default(MEDIUM)
+
+  dueDate     DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([firmId])
+  @@index([matterId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+}
+
+model Deadline {
+  id String @id @default(cuid())
+
+  matterId String
+  matter   Matter @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+
+  dueDate   DateTime
+  completed Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([matterId])
+  @@index([dueDate])
+}
+
+model Hearing {
+  id String @id @default(cuid())
+
+  matterId String
+  matter   Matter @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  title     String
+  court     String?
+  courtroom String?
+
+  hearingDate DateTime
+
+  purpose String?
+  outcome String?
+  notes   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([matterId])
+  @@index([hearingDate])
+}
+
+model Conversation {
+  id String @id @default(cuid())
+
+  firmId String
+  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  matterId String?
+  matter   Matter? @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  type ConversationType @default(MATTER)
+
+  title String?
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([firmId])
+  @@index([matterId])
+  @@index([clientId])
+}
+
+model Message {
+  id String @id @default(cuid())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  role    MessageRole
+  content String
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+}
+
+model Memory {
+  id String @id @default(cuid())
+
+  matterId String?
+  matter   Matter? @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  type    MemoryType
+  content String
+
+  metadata Json?
+
+  importance Float @default(0.5)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([matterId])
+  @@index([type])
+}
+
+model LegalSource {
+  id String @id @default(cuid())
+
+  firmId String?
+  firm   Firm?   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  title        String
+  citation     String?
+  sourceType   String
+  jurisdiction String  @default("Nigeria")
+
+  url     String?
+  content String?
+
+  metadata Json?
+
+  citations LegalCitation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([firmId])
+  @@index([jurisdiction])
+}
+
+model LegalCitation {
+  id String @id @default(cuid())
+
+  legalSourceId String
+  legalSource   LegalSource @relation(fields: [legalSourceId], references: [id], onDelete: Cascade)
+
+  documentId String?
+  matterId   String?
+
+  quote   String?
+  page    String?
+  section String?
+
+  createdAt DateTime @default(now())
+
+  @@index([legalSourceId])
+  @@index([matterId])
+  @@index([documentId])
+}
+
+model DocumentTemplate {
+  id String @id @default(cuid())
+
+  firmId String
+  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  name String
+  type DocumentType
+
+  description String?
+
+  content String
+
+  metadata Json?
+
+  generatedDocuments GeneratedDocument[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([firmId])
+}
+
+model GeneratedDocument {
+  id String @id @default(cuid())
+
+  matterId String
+  matter   Matter @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  sourceDocumentId String?
+  sourceDocument   Document? @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+
+  templateId String?
+  template   DocumentTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  name    String
+  content String
+
+  approved Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([matterId])
+}
+
+model AIExecution {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  matterId String?
+  matter   Matter? @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  agent String
+  model String?
+
+  input  Json?
+  output Json?
+
+  status AIExecutionStatus @default(STARTED)
+
+  tokensUsed Int?
+  latencyMs  Int?
+
+  createdAt DateTime @default(now())
+
+  toolExecutions ToolExecution[]
+
+  @@index([userId])
+  @@index([matterId])
+  @@index([agent])
+}
+
+model ToolExecution {
+  id String @id @default(cuid())
+
+  aiExecutionId String
+  aiExecution   AIExecution @relation(fields: [aiExecutionId], references: [id], onDelete: Cascade)
+
+  toolName String
+
+  arguments Json?
+  result    Json?
+
+  status ToolExecutionStatus @default(STARTED)
+
+  createdAt DateTime @default(now())
+
+  @@index([aiExecutionId])
+  @@index([toolName])
+}
+
+model Approval {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  resourceType String
+  resourceId   String
+
+  status ApprovalStatus @default(PENDING)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([resourceType, resourceId])
+}
+
+model Escalation {
+  id String @id @default(cuid())
+
+  matterId String?
+  matter   Matter? @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  assignedToId String?
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  reason EscalationReason
+  status EscalationStatus @default(OPEN)
+
+  description String?
+  aiContext   Json?
+
+  resolvedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([matterId])
+  @@index([assignedToId])
+  @@index([status])
+}
+
+model Communication {
+  id String @id @default(cuid())
+
+  matterId String?
+  matter   Matter? @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  channel   String
+  recipient String
+  subject   String?
+  content   String
+
+  sent   Boolean   @default(false)
+  sentAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([matterId])
+}
+
+model FollowUp {
+  id String @id @default(cuid())
+
+  matterId String?
+  matter   Matter? @relation(fields: [matterId], references: [id], onDelete: Cascade)
+
+  recipient String
+  message   String
+
+  scheduledFor DateTime?
+  completed    Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([matterId])
+  @@index([scheduledFor])
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+
+  firmId String
+  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  action     String
+  resource   String?
+  resourceId String?
+
+  metadata Json?
+
+  ipAddress String?
+
+  createdAt DateTime @default(now())
+
+  @@index([firmId])
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+}
+
+model WorkflowExecution {
+  id          String         @id @default(cuid())
+  workflowKey String
+  matterId    String?
+  clientId    String?
+  userId      String
+  status      WorkflowStatus @default(PENDING)
+
+  input  Json?
+  output Json?
+  error  String?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matter Matter? @relation(fields: [matterId], references: [id], onDelete: SetNull)
+  client Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  steps WorkflowStep[]
+
+  @@index([workflowKey])
+  @@index([matterId])
+  @@index([clientId])
+  @@index([userId])
+  @@index([status])
+}
+
+model WorkflowStep {
+  id          String @id @default(cuid())
+  executionId String
+  stepKey     String
+  name        String
+
+  status WorkflowStepStatus @default(PENDING)
+
+  input  Json?
+  output Json?
+  error  String?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  execution WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  @@index([executionId])
+  @@index([stepKey])
+  @@index([status])
+}

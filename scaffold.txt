@@ -1,0 +1,32 @@
+# frontend packages
+
+npm install react-router-dom @tanstack/react-query react-markdown remark-gfm lucide-react
+npm install axios
+npm install -D eslint@^9 @eslint/js@^9 eslint-plugin-import@^2.32.0 eslint-import-resolver-node@^0.4.0 eslint-plugin-react@^7 eslint-plugin-react-hooks@^7
+
+
+# backend packages
+npm install express cors helmet dotenv zod morgan
+npm install groq-sdk
+npm install openai
+npm install @prisma/adapter-pg@^7.10.0 @prisma/client@^7.10.0
+npm install -D prisma@^7.10.0
+npm install bcryptjs jsonwebtoken
+npm install -D nodemon
+npm install -D eslint@9 @eslint/js@9 eslint-plugin-import@2.32.0
+npm install @huggingface/transformers
+
+
+# create postgres db vector and redis
+docker compose up -d
+
+# initialize prisma client
+npx prisma init
+npx prisma format
+npx prisma validate
+
+# migrate schema to db
+npx prisma migrate dev --name init
+
+File Upload + Local Storage + Extraction
+npm install multer pdf-parse mammoth

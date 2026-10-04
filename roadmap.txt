@@ -1,0 +1,137 @@
+LegalFlow AI Roadmap
+
+Phase 1 — Backend Foundation
+
+Completed
+
+Express, PostgreSQL, Prisma
+
+Authentication and firm isolation
+
+Core legal entities
+
+Phase 2 — Core Legal Data & AI Infrastructure
+
+Completed
+
+Clients and matters
+
+Documents and processing
+
+Embeddings, pgvector and RAG
+
+Groq integration
+
+Phase 3 — Matter Agent Backend
+
+Implemented
+
+Tool Registry and ToolRunner
+
+Permissions and workflow execution
+
+Matter retrieval and document search
+
+Task creation and document drafting
+
+Approval controls
+
+Phase 4 — Core Frontend & Workflow Integration
+
+Current
+
+Authentication and dashboard
+
+Clients and matters interface
+
+Matter details
+
+Task CRUD and assignment
+
+Team directory
+
+Intake workflow interface
+
+Phase 5 — AI Agent Frontend
+
+Pending
+
+Dedicated AI workspace
+
+Matter selection and context
+
+Conversation interface
+
+Tool execution feedback
+
+Source and document references
+
+Human approval interface
+
+Phase 6 — Complete Matter Agent Integration
+
+Pending
+
+Connect the frontend to the existing Matter Agent API
+
+Display structured agent responses
+
+Display proposed actions
+
+Review and approve generated drafts
+
+Test complete user workflows
+
+Phase 7 — Remaining Specialized Agents
+
+Pending
+
+Legal Intake Agent
+
+Client Enquiry Agent
+
+Legal Research Agent
+
+Document Agent
+
+Follow-up Agent
+
+Phase 8 — Multi-Agent Orchestration
+
+Pending
+
+Agent Router
+
+Shared ToolRunner
+
+Agent-to-agent handoffs
+
+Workflow coordination
+
+Escalation and approval routing
+
+Phase 9 — Client Portal & Legal Education
+
+Pending
+
+Client communication
+
+Client-facing legal information
+
+Secure matter access
+
+Client enquiry experience
+
+Phase 10 — Production Readiness
+
+Pending
+
+Security hardening
+
+Audit and observability
+
+Background processing
+
+Agent evaluation
+
+Deployment and operational testing
